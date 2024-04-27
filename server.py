@@ -1,10 +1,31 @@
 import boto3
 import cv2
 import numpy as np
+
 # Create SQS client
 sqs = boto3.client('sqs', region_name='eu-north-1')
 s3 = boto3.client('s3', region_name='eu-north-1')
 queue_url = 'https://sqs.eu-north-1.amazonaws.com/992382542532/image-processing-s3-to-ec2-queue'
+
+
+def process_image(image, op):
+    nparr = np.frombuffer(image, np.uint8)
+    img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if op == 'blur':
+        return cv2.blur(img_np, (10, 10))
+    elif op == 'cvtgrayscale':
+        return cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+    elif op == 'dilate':
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+        kernel = np.ones((5, 5), np.uint8)  # You can adjust the kernel size as needed
+        return cv2.dilate(gray_image, kernel, iterations=1)
+    elif op == 'erode':
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+        kernel = np.ones((5, 5), np.uint8)  # You can adjust the kernel size as needed
+        return cv2.erode(gray_image, kernel, iterations=1)
+    else:
+        return img_np
+
 
 # Receive message from SQS queue
 while True:
@@ -33,9 +54,9 @@ while True:
         # get the object from the s3 bucket
         s3_response = s3.get_object(Bucket=bucket, Key=key)
         image_data = s3_response['Body'].read()
-        nparr = np.frombuffer(image_data, np.uint8)
-        img_np = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        processed_image = cv2.blur(img_np, (5, 5))
+        operation = s3_response['Metadata']['operation']
+        print('operation is ' + operation)
+        processed_image = process_image(image_data, operation)
         _, processed_img_bytes = cv2.imencode('.jpg', processed_image)
         processed_img_bytes = processed_img_bytes.tobytes()
         print('storing the result to test-n-final-bucket')
@@ -45,7 +66,7 @@ while True:
             Body=processed_img_bytes,
             ContentType='image/jpg',  # Adjust content type if needed
             Metadata={
-                'operation': 'blur'
+                'operation': operation
             }
         )
     else:

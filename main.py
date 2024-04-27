@@ -59,14 +59,16 @@ while True:
         break
     operation = input('Choose a number Operation to do 1-Blur \n2-Convert to Grayscale \n3-Dilate \n4-Erode')
 
-    if operation == 1:
-        operation = 'blur'
-    elif operation == 2:
-        operation = 'cvtgrayscale'
-    elif operation == 3:
-        operation = 'dilate'
-    elif operation == 4:
-        operation = 'erode'
+    if operation == '1':
+        op = 'blur'
+    elif operation == '2':
+        op = 'cvtgrayscale'
+    elif operation == '3':
+        op = 'dilate'
+    elif operation == '4':
+        op = 'erode'
+    else:
+        op = ''
 
     with open(image_path, 'rb') as f:
         image_data = f.read()
@@ -78,7 +80,7 @@ while True:
         Body=image_data,
         ContentType='image/jpg',  # Adjust content type if needed
         Metadata={
-            'operation': operation
+            'operation': op
         }
     )
 
