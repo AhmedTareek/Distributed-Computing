@@ -67,6 +67,18 @@ while True:
         op = 'dilate'
     elif operation == '4':
         op = 'erode'
+    elif operation == '5':
+        op = 'open'
+    elif operation == '6':
+        op = 'close'
+    elif operation == '7':
+        op = 'edge-detection'
+    elif operation == '8':
+        op = 'threshold'
+    elif operation == '9':
+        op = 'contour-detection'
+    elif operation == '10':
+        op = 'face-detection'
     else:
         op = ''
 

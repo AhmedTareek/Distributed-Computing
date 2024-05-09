@@ -23,6 +23,33 @@ def process_image(image, op):
         gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
         kernel = np.ones((5, 5), np.uint8)  # You can adjust the kernel size as needed
         return cv2.erode(gray_image, kernel, iterations=1)
+    elif op == 'open':
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+        kernel = np.ones((15, 15), np.uint8)
+        return cv2.morphologyEx(gray_image, cv2.MORPH_OPEN, kernel)
+    elif op == 'close':
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+        kernel = np.ones((15, 15), np.uint8)
+        return cv2.morphologyEx(gray_image, cv2.MORPH_CLOSE, kernel)
+    elif op == 'edge-detection':
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+        return cv2.Canny(gray_image, 100, 200)
+    elif op == 'threshold':
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
+        return thresh
+    elif op == 'contour-detection':
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+        _, thresh = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        return cv2.drawContours(img_np, contours, -1, (0, 255, 0), 3)
+    elif op == 'face-detection':
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray_image, 1.3, 5)
+        for (x, y, w, h) in faces:
+            cv2.rectangle(img_np, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        return img_np
     else:
         return img_np
 
