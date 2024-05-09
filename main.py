@@ -2,8 +2,12 @@ import boto3
 import uuid
 import time
 import hashlib
-
 import threading
+import logging
+
+# Configure logging
+logging.basicConfig(filename='system_logs.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 sqs = boto3.client('sqs', region_name='eu-north-1')
 s3_client = boto3.client('s3')
@@ -23,7 +27,7 @@ def generate_key():
 def check_result(key):
     queue_url = 'https://sqs.eu-north-1.amazonaws.com/992382542532/results-queue'
     while True:
-        print('waiting for the image')
+        logging.info('waiting for the image')
         response = sqs.receive_message(
             QueueUrl=queue_url,
             MaxNumberOfMessages=1,  # Max number of messages to receive
@@ -32,7 +36,7 @@ def check_result(key):
         if 'Messages' in response:
             message = response['Messages'][0]
             receipt_handle = message['ReceiptHandle']
-            print('message body is ' + message['Body'] + 'and key is ' + key)
+            logging.info('message body is ' + message['Body'] + 'and key is ' + key)
             if message['Body'] != key:
                 # it's not the message you are waiting for so sleep to allow others to get the message
                 time.sleep(2)
@@ -49,15 +53,16 @@ def check_result(key):
             print('we got your image')
             break
         else:
-            print('waiting for the image')
+            logging.info('waiting for the image')
 
 
 # main thread
 while True:
-    image_path = input('Enter the image path or :q if you wish to exit')
+    image_path = input('Enter the image path or :q if you wish to exit\n')
     if image_path == ':q':
         break
-    operation = input('Choose a number Operation to do 1-Blur \n2-Convert to Grayscale \n3-Dilate \n4-Erode')
+    operation = input('Choose a number Operation to do \n1-Blur \n2-Convert to Grayscale \n3-Dilate \n4-Erode'
+                      '\n5-open \n6-close \n7-edge-detection \n8-threshold \n9-contour-detection\n')
 
     if operation == '1':
         op = 'blur'
