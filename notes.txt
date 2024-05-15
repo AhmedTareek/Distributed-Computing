@@ -1,0 +1,37 @@
+Normal case:
+1- User uploads to S3.
+2- Lambda is triggered and sends a message to SQS.
+3- EC2 instances poll the SQS until one of them receives the message.
+    The message then becomes invisible to the others for 1 minute.
+4- The EC2 instance that received the message completes the task, then puts the result into the result bucket.
+5- It deletes the message from the queue.
+6- A lambda function is triggered when the results bucket receives a new item and puts a message on the queue for users to know.
+7- The user reads the message and gets their processed image.
+____________________________________________________________________
+
+############################ fault tolerance ##############################
+____________________________________________________________________
+
+Now what is the instace fails after reading the message from queue ?
+
+> simply after 1 minute the message will be visable agian for other 
+insataces to work on it as the message is only deleted from the queue 
+after the resuly is put in the results bicket.
+____________________________________________________________________
+Now what if the instace takes a long time more than usual so the minute passed
+but it didnt fail so it puts also a processed object on the results bucket ?
+
+> no problem the lifecycle rule of the bucket is set that if object stays more
+than one day it will be deleted.
+____________________________________________________________________
+
+############################ scalability ##############################
+____________________________________________________________________
+
+what if the queue gets filled with too many messages ?
+
+> answer is simple add a new ec2 instace to work with the others on the queue
+when a new object is uploaded from the user the lambda function checks if the 
+approx number of messages in the queue excedeed a certain threshold if so it add
+a new instace.
+

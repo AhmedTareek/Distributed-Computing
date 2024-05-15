@@ -1,3 +1,75 @@
+import json
+import boto3
+
+max_instance_num = 5
+max_queue_messages = 10
+def lambda_handler(event, context):
+    sqs = boto3.client('sqs')
+
+    queue_url = 'https://sqs.eu-north-1.amazonaws.com/992382542532/image-processing-s3-to-ec2-queue'
+    # TODO implement
+    bucket = event['Records'][0]['s3']['bucket']['name']
+    key = event['Records'][0]['s3']['object']['key']
+
+    # check if the number of messages in queue is above max_queue_messages
+    if(get_message_number(sqs, queue_url) > max_queue_messages):
+        launch_ec2()
+   
+    
+    # send the bucke name and key to the sqs to allow the ec2 instance to get it 
+    response = sqs.send_message(QueueUrl=queue_url,
+        MessageBody=(bucket+'  '+key))
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!'+ str(get_message_number(sqs, queue_url)))
+    }
+    
+def get_message_number(sqs, queue_url):
+    # Try to know the approx number of messages in a queue 
+    # Get queue attributes
+    response = sqs.get_queue_attributes(
+    QueueUrl=queue_url,
+    AttributeNames=['ApproximateNumberOfMessages']
+    )
+    # Extract the number of messages from the response
+    num_messages = response['Attributes']['ApproximateNumberOfMessages']
+    num_messages = int(num_messages)
+    return num_messages
+
+def launch_ec2():
+    # Initialize EC2 client
+    ec2 = boto3.client('ec2')
+
+    # Filter instances by running state
+    response = ec2.describe_instances(
+        Filters=[
+            {
+                'Name': 'instance-state-name',
+                'Values': ['running']
+            }
+        ]
+    )
+
+    # Extract the number of running instances
+    num_instances = len(response['Reservations'])
+    print(num_instances)
+    if(num_instances > max_instance_num): return False
+    user_data_script = """#!/bin/bash
+# Update package index
+apt update
+
+# Install pip
+apt install python3-pip -y
+
+# Install boto3
+apt install python3-boto3 -y
+
+# Install OpenCV dependencies
+apt install python3-opencv -y
+
+# Create server.py file
+cat << EOF > /home/ubuntu/server.py
 import boto3
 import cv2
 import numpy as np
@@ -99,3 +171,31 @@ while True:
         logging.info('deleted object from S3 bucket: %s' % bucket)
     else:
         logging.info("No messages received.")
+
+
+EOF
+# Change ownership of the file to the user
+chown ubuntu:ubuntu /home/ubuntu/server.py
+
+# Run server.py
+python3 /home/ubuntu/server.py
+"""
+    iam_role_arn = 'arn:aws:iam::992382542532:instance-profile/workers_role'
+    key_pair_name = 'kmna-key-pair'
+
+    # Launch EC2 instance with user data, IAM role, and key pair
+    response = ec2.run_instances(
+        ImageId='ami-0705384c0b33c194c',
+        InstanceType='t3.micro',
+        UserData=user_data_script,
+        IamInstanceProfile={
+            'Arn': iam_role_arn,
+        },
+        KeyName=key_pair_name,
+        MinCount=1,
+        MaxCount=1,
+        Placement={
+            'AvailabilityZone': 'eu-north-1a'
+        },
+    )
+    return True
