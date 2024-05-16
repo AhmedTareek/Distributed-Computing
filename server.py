@@ -2,6 +2,7 @@ import boto3
 import cv2
 import numpy as np
 import logging
+import requests
 
 # Configure logging
 logging.basicConfig(filename='system_logs.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -48,6 +49,10 @@ def process_image(image, op):
         contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         return cv2.drawContours(img_np, contours, -1, (0, 255, 0), 3)
     elif op == 'face-detection':
+        xml_url = 'https://github.com/opencv/opencv/raw/master/data/haarcascades/haarcascade_frontalface_default.xml'
+        req = requests.get(xml_url)
+        with open('haarcascade_frontalface_default.xml', 'wb') as file:
+            file.write(req.content)
         face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
         gray_image = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray_image, 1.3, 5)
