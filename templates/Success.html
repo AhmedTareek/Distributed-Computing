@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Success</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container mt-4">
+    <h1>Files Successfully Uploaded and Processed</h1>
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        {% for index, (filename, processed_path) in enumerate(processed_paths) %}
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if loop.first %}active{% endif %}" id="tab-{{ index }}-tab" data-toggle="tab" href="#tab-{{ index }}" role="tab" aria-controls="tab-{{ index }}" aria-selected="true">{{ filename }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+    <div class="tab-content" id="myTabContent">
+        {% for index, (filename, processed_path) in enumerate(processed_paths) %}
+        <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="tab-{{ index }}" role="tabpanel" aria-labelledby="tab-{{ index }}-tab">
+            <h3>{{ filename }}</h3>
+            <img src="{{ url_for('static', filename=processed_path) }}" class="img-fluid" alt="{{ filename }}">
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</body>
+</html>

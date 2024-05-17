@@ -4,8 +4,7 @@ import time
 import hashlib
 import threading
 import logging
-import os
-
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 
 # Configure logging
 logging.basicConfig(filename='system_logs.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -25,8 +24,43 @@ def generate_key():
     key = hash_object.hexdigest()
     return key
 
+def check_object_exists(bucket_name, object_key):
+    # Create a session using your credentials or rely on default session
+
+    try:
+        # Try to get the object metadata
+        s3_client.head_object(Bucket=bucket_name, Key=object_key)
+        print(f"Object '{object_key}' exists in bucket '{bucket_name}'.")
+        return True
+    except ClientError as e:
+        # If a client error is raised, the object does not exist
+        if e.response['Error']['Code'] == '404':
+            #print(f"Object '{object_key}' does not exist in bucket '{bucket_name}'.")
+            return False
+        else:
+            print('other errors')
+            # For other errors, raise the exception
+            return False
+    except (NoCredentialsError, PartialCredentialsError):
+        print("Credentials not available or incomplete.")
+        return False
+    
+def check_result_from_bucket(key):
+    print('entered check from bucket')
+    # Record the start time
+    start_time = time.time()
+    while True:
+        if check_object_exists('test-n-final-bucket',key):
+            s3_client.download_file('test-n-final-bucket', key, 'Bucket'+key + '.jpg')
+            # Record the end time
+            end_time = time.time()
+            print('got the object from the bucket directly in ', end_time - start_time)
+
+            break
+
 
 def check_result(key):
+    start_time = time.time()
     queue_url = 'https://sqs.eu-north-1.amazonaws.com/992382542532/results-queue'
     while True:
         logging.info('waiting for the image')
@@ -41,7 +75,7 @@ def check_result(key):
             logging.info('message body is ' + message['Body'] + 'and key is ' + key)
             if message['Body'] != key:
                 # it's not the message you are waiting for so sleep to allow others to get the message
-                time.sleep(2)
+                #time.sleep(2)
                 continue
             sqs.delete_message(
                 QueueUrl=queue_url,
@@ -52,7 +86,8 @@ def check_result(key):
                 Bucket='test-n-final-bucket',
                 Key=key,
             )
-            print('we got your image')
+            end_time = time.time()
+            print('we got your image in ', end_time-start_time)
             break
         else:
             logging.info('waiting for the image')
@@ -64,7 +99,7 @@ while True:
     if image_path == ':q':
         break
     operation = input('Choose a number Operation to do \n1-Blur \n2-Convert to Grayscale \n3-Dilate \n4-Erode'
-                      '\n5-open \n6-close \n7-edge-detection \n8-threshold \n9-contour-detection\n')
+                      '\n5-open \n6-close \n7-edge-detection \n8-threshold \n9-contour-detection \n10-face detection\n')
 
     if operation == '1':
         op = 'blur'
@@ -104,4 +139,7 @@ while True:
     )
 
     thread = threading.Thread(target=check_result, args=(image_key,))
+    thread2 =  threading.Thread(target=check_result_from_bucket, args=(image_key,))
+    thread2.start()
     thread.start()
+

@@ -68,6 +68,9 @@ apt install python3-boto3 -y
 # Install OpenCV dependencies
 apt install python3-opencv -y
 
+# Install MPI lib
+apt install python3-mpi4py -y
+
 # Create server.py file
 cat << EOF > /home/ubuntu/server.py
 import boto3
