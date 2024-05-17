@@ -1,4 +1,6 @@
 import shutil
+import webbrowser
+
 import boto3
 import time
 import hashlib
@@ -9,7 +11,6 @@ import uuid
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
 
 from flask import Flask, render_template, request, redirect, url_for, current_app
-
 
 
 # Configure logging
@@ -151,27 +152,30 @@ def upload_file():
         if 'file' not in request.files:
             return render_template('index3.html', message='No file part')
 
-        file = request.files['file']
+        files = request.files.getlist('file')
+        for file in files:
+            # If the user does not select a file, the browser submits an empty file without a filename
+            if file.filename == '':
+                return render_template('index3.html', message='No selected file')
 
-        # If the user does not select a file, the browser submits an empty file without a filename
-        if file.filename == '':
-            return render_template('index3.html', message='No selected file')
+            # If the file exists and is allowed, process it
+            if file:
+                destination_path = r"C:\Users\moisi\Desktop\Semester 8\CSE354 Distributed Computing\Project\CODE\Phase_3\static"
+                filename = file.filename
+                file_path = os.path.join(destination_path, filename)
+                file.save(file_path)
+                with open(destination_path + '\\' + filename, 'rb') as f:
+                    image_data = f.read()
+                file_size = len(image_data)
+                print(file_size)
+                option = request.form['options']  # Get selected option from dropdown
 
-        # If the file exists and is allowed, process it
-        if file:
-            destination_path = r"C:\Users\moisi\Desktop\Semester 8\CSE354 Distributed Computing\Project\CODE\Phase_3\static"
-            filename = file.filename
-            file_path = os.path.join(destination_path, filename)
-            file.save(file_path)
-            with open(destination_path + '\\' + filename, 'rb') as f:
-                image_data = f.read()
-            file_size = len(image_data)
-            print(file_size)
-            option = request.form['options']  # Get selected option from dropdown
-            processed_path = process_photo(image_data, option)
+                processed_path = process_photo(image_data, option)
+                print(processed_path)
 
-            # print("Absolute File Path:", absolute_file_path)
-            return redirect(url_for('success', filename=filename, processed_path=processed_path))
+                #print("Absolute File Path:", absolute_file_path)
+                ##return webbrowser.open_new_tab('http://127.0.0.1:3000/result/' + filename + '/' + processed_path)
+                ##return redirect(url_for('success', filename=filename, processed_path=processed_path))
 
     return render_template('index3.html')
 
@@ -205,4 +209,4 @@ def backend():
 
 
 if __name__ == '__main__':
-    app.run(debug=True , port=3000)
+    app.run(debug=True, port=3000)
