@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Cloud | Home</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/ICON.PNG') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+
+<body>
+<!--Nav-->
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container-fluid d-flex align-items-center">
+    <div class="d-flex align-items-center">
+      <img src="{{ url_for('static', filename='icons/ICON.png') }}" alt="Icon" height="50px" width="50px" class="mr-5">
+      <a class="navbar-brand fw-bold text-uppercase" href="/">ImageCloud</a>
+        <a class="navbar-brand fw-bold text-uppercase" href="/backend">Monitor Backend</a>
+    </div>
+  </div>
+</nav>
+
+<!--Body-->
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+    <h1>Upload a File</h1>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    <form method="POST" enctype="multipart/form-data" class="mb-4">
+        <div class="form-group">
+        <input type="file" name="file" accept="image/*"  class="form-control" multiple >
+        </div>
+        <div class="form-group">
+            <label for="options">Select operation:</label>
+
+        <select name="options" id="options" class="form-control">
+
+            <option value="cvtgrayscale">Grayscale</option>
+            <option value="blur">Blur</option>
+            <option value="dilate">Dilate</option>
+            <option value="erode">Erode</option>
+            <option value="open">Open</option>
+            <option value="close">Close</option>
+            <option value="edge-detection">Edge Detection</option>
+            <option value="threshold">Threshold</option>
+            <option value="contour-detection">Contour Detection</option>
+            <option value="face-detection">Face Detection</option>
+        </select>
+        </div>
+        <input class="btn btn-primary" type="submit" value="Upload">
+
+    </form>
+        </div>
+    </div>
+</div>
+
+
+
+<!--footer-->
+<footer id="sticky-footer" class="flex-shrink-0 py-4 bg-dark text-white-50 ">
+    <div class="container text-center">
+        <small>Copyright &copy; IMAGE CLOUD </small>
+    </div>
+</footer>
+
+
+<!--Scripts-->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+
+</body>
+</html>

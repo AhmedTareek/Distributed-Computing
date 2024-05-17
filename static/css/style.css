@@ -1,0 +1,23 @@
+footer {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+.thumbnail {
+            max-height: 200px;=
+
+            margin-bottom: 10px;
+            position: relative;
+}
+
+
+.delete-button {
+            position: absolute;
+
+            top: 2px;
+            right: 2px;
+            border: none;
+
+            padding: 5px;
+            cursor: pointer;
+}

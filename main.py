@@ -4,6 +4,8 @@ import time
 import hashlib
 import threading
 import logging
+import os
+
 
 # Configure logging
 logging.basicConfig(filename='system_logs.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

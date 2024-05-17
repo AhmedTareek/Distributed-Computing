@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Cloud | BACKEND </title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/ICON.PNG') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+
+<!--NAV -->
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container-fluid d-flex align-items-center">
+    <div class="d-flex align-items-center">
+      <img src="{{ url_for('static', filename='icons/ICON.png') }}" alt="Icon" height="50px" width="50px" class="mr-5">
+      <a class="navbar-brand fw-bold text-uppercase" href="/">ImageCloud</a>
+        <a class="navbar-brand fw-bold text-uppercase" href="/backend">Monitor Backend</a>
+    </div>
+  </div>
+</nav>
+
+<!--body -->
+   <!-- Column for EC2 status -->
+            <div class="col-md-6">  <!-- Use half of the row -->
+                <h2>EC2 Instances Status</h2>
+                <table class="table table-bordered table-hover">  <!-- Styled table -->
+                    <thead>
+                        <tr>
+                            <th>Instance ID</th>
+                            <th>Type</th>
+                            <th>State</th>
+                            <th>Public IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for instance in data %}
+                        <tr>
+                            <td>{{ instance['Instance ID'] }}</td>
+                            <td>{{ instance['Type'] }}</td>
+                            <td>{{instance['State']}}</td>
+                            <td>{{ instance['Public IP'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+
+
+
+<!--FOOTER-->
+<footer id="sticky-footer" class="flex-shrink-0 py-4 bg-dark text-white-50 ">
+    <div class="container text-center">
+        <small>Copyright &copy; IMAGE CLOUD </small>
+    </div>
+</footer>
+
+<!--SCRIPTS-->
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
+
+
+<script>
+    // Refresh the page every 5 seconds
+setInterval(function() {
+    location.reload();
+}, 5000); // 5000 milliseconds = 5 seconds
+
+
+</script>
+</body>
+</html>
