@@ -1,14 +1,16 @@
 import random
+import threading
 
 from flask import Flask, request, render_template, redirect, url_for
 import os
-import threading
 from concurrent.futures import ThreadPoolExecutor
 import boto3
 import hashlib
 import time
 import shutil
 import uuid
+import asyncio
+import aioboto3
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
 
 app = Flask(__name__)
@@ -21,6 +23,8 @@ ec2_client = boto3.client('ec2')
 UPLOAD_FOLDER = r"D:\UNI\sems\2024 spring\Distributed Computing\Project\static"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+paths_list = []
 
 
 # Function to check if an object exists in S3
@@ -86,19 +90,45 @@ def check_result(key):
 
 # Photo processing function
 def process_photo(file, op):
-    print(op)
-    image_key = generate_key()
+    print(op + ' entered')
+    key = generate_key()
     s3_client.put_object(
         Bucket='kmna-juju-bucket',
-        Key=image_key,
+        Key=key,
         Body=file,
         ContentType='image/jpg',  # Adjust content type if needed
         Metadata={'operation': op}
     )
 
     # Create an event to signal when the thread finishes
-    check_result(image_key)
-    return image_key + '.jpg'
+    # check_result(image_key)
+    print('thread started')
+    start_time = time.time()
+    while True:
+        if check_object_exists('test-n-final-bucket', key):
+            s3_client.download_file('test-n-final-bucket', key, key + '.jpg')
+            image_name = str(key) + '.jpg'
+            current_directory = os.getcwd()
+            source_path = os.path.join(current_directory, image_name)
+            destination_path = "D:\\UNI\sems\\2024 spring\\Distributed Computing\\Project\\static"
+            shutil.move(source_path, destination_path)
+            end_time = time.time()
+            s3_client.delete_object(Bucket='test-n-final-bucket', Key=key)
+            print('Got the object from the bucket directly in', end_time - start_time)
+            break
+    return key + '.jpg'
+
+
+# def upload_to_s3(key, op, file):
+#     print('entered put_object thread')
+#     s3_client.put_object(
+#         Bucket='kmna-juju-bucket',
+#         Key=key,
+#         Body=file,
+#         ContentType='image/jpg',  # Adjust content type if needed
+#         Metadata={'operation': op}
+#     )
+#     print('finished putting the object')
 
 
 # Route to handle file uploads
@@ -114,15 +144,40 @@ def upload_file():
         if not files or files[0].filename == '':
             return render_template('index3.html', message='No selected file')
 
-        # Use ThreadPoolExecutor to process files in parallel
-        with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(process_file, file, option) for file in files]
-            results = [future.result() for future in futures]
+        global paths_list
+        key_list = []
+        for file in files:
+            key = generate_key()
+            # thread = threading.Thread(target=upload_to_s3, args=(key, option, file))
+            # thread.start()
+            # threads.append(thread)
+            key_list.append(key)
+            paths_list.append((file, key + '.jpg'))
 
-        processed_paths = [(file.filename, result) for file, result in zip(files, results)]
-        return render_template('success.html', processed_paths=processed_paths, enumerate=enumerate)
-        # processed_paths = results  # List of processed file paths
-        # return render_template('Success.html', processed_paths=processed_paths)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(big(key_list, files,option))
+        except Exception as e:
+            print('dadada')
+            print(f"RuntimeError: {e}")
+
+        for key in key_list:
+            while True:
+                start_time = time.time()
+                if check_object_exists('test-n-final-bucket', key):
+                    s3_client.download_file('test-n-final-bucket', key, key + '.jpg')
+                    image_name = str(key) + '.jpg'
+                    current_directory = os.getcwd()
+                    source_path = os.path.join(current_directory, image_name)
+                    destination_path = "D:\\UNI\sems\\2024 spring\\Distributed Computing\\Project\\static"
+                    shutil.move(source_path, destination_path)
+                    end_time = time.time()
+                    s3_client.delete_object(Bucket='test-n-final-bucket', Key=key)
+                    print('Got the object from the bucket directly in', end_time - start_time)
+                    break
+
+        return render_template('success.html', processed_paths=paths_list, enumerate=enumerate)
 
     return render_template('index3.html')
 
@@ -137,6 +192,8 @@ def process_file(file, option):
     file_size = len(image_data)
     print(file_size)
     processed_path = process_photo(image_data, option)
+    global paths_list
+    paths_list.append((file, processed_path))
     return processed_path
 
 
@@ -168,6 +225,39 @@ def get_ec2_info(ec2_client):
 def backend():
     data = get_ec2_info(ec2_client)
     return render_template('backend.html', data=data)
+
+
+async def upload_to_s3(client, key, file_data, op):
+    s3_bucket = 'kmna-juju-bucket'
+    await client.put_object(
+        Bucket=s3_bucket,
+        Key=key,
+        Body=file_data,
+        ContentType='image/jpg',  # Adjust content type if needed
+        Metadata={'operation': op}
+    )
+    print(f'Finished uploading {key}')
+
+
+async def big(keys, files, op):
+    print('entered big')
+    l = ['hush.jpg', 'face.jpg', 'square.jpg', 'phone.jpg', 'star.jpg', '1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg']
+    print(len(l))
+    session = aioboto3.Session()
+
+    async with session.client('s3') as s3_client:
+        tasks = []
+        for key, pic in zip(keys, files):
+            try:
+                print('try to open file')
+
+                file_content = pic.read()
+                tasks.append(upload_to_s3(s3_client, key, file_content, op))
+                print('passed file to upload')
+            except FileNotFoundError:
+                print(f"File not found: {key}")
+
+        await asyncio.gather(*tasks)
 
 
 if __name__ == '__main__':
